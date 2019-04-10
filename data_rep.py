@@ -4,6 +4,16 @@ from subprocess import check_output
 import pdb
 from sklearn.cluster import DBSCAN
 
+
+#Display top symptoms
+def disp_common(syd_count, sym):
+    
+    syd_count=syd_count.sort_values(by='did',ascending=False)
+    com_sym=sym['symptom'].loc[syd_count.index].head(30).values
+    print('Common Symptoms: \n')
+    print(', '.join(com_sym))
+    print('\n')
+
 #Create counts table
 def create_count(sd_diff):
     for did in did_list:
@@ -47,8 +57,8 @@ def related (sym_id, df_prob, sym):
     for i in range(0,271):
         if (df_prob.loc[sym_id][i]>(df_prob.loc[sym_id].max()/4) and cnt<5):
             if(cnt==0):
-                print('Entered symptom:', sym.loc[sym_id]['symptom'])
-                print('\n')
+                #print('Entered symptom:', sym.loc[sym_id]['symptom'])
+                #print('\n')
                 print('Related Symptoms:')
             
             rel_sym.append(sym.loc[i]['syd'])
@@ -84,14 +94,18 @@ def main():
     sd_diff=diff.merge(dia, left_on='did', right_on='did')
     sd_diff=sd_diff.merge(sym, left_on='syd', right_on='syd')
     syd_count=sd_diff[['syd','did']].groupby('syd').count()
+    syd_count['id']=range(0,len(syd_count))
+    syd_count=syd_count.set_index('id')
     prior_list=np.array(syd_count)
     sd_diff_did=sd_diff.groupby('did')
-
     #Read the counts table
     df_prob=pd.read_csv('df_prob.csv')
 
     for i in range(0,271):
         df_prob.iloc[i][i]=0
+    
+    #Display common symptoms
+    disp_common(syd_count, sym)
 
     #Enter the symptom
     var = input("Enter a symptom:")
@@ -119,7 +133,6 @@ def main():
     else:
         print('Symptom not found')
 
-    pdb.set_trace()
 
 
 if __name__ == "__main__":
