@@ -3,16 +3,25 @@ import pandas as pd
 from subprocess import check_output
 import pdb
 from sklearn.cluster import DBSCAN
-
+import math
 
 #Display top symptoms
 def disp_common(syd_count, sym):
-    
     syd_count=syd_count.sort_values(by='did',ascending=False)
     com_sym=sym['symptom'].loc[syd_count.index].head(30).values
     print('Common Symptoms: \n')
     print(', '.join(com_sym))
     print('\n')
+
+#Accept the external input
+def enter_symptom(sym):
+    var = input("Enter a symptom:")
+    if len(var):
+        sym_id=query(sym,var)
+    else:
+        print("No symptom entered")
+    return sym_id
+
 
 #Create counts table
 def create_count(sd_diff):
@@ -55,10 +64,10 @@ def related (sym_id, df_prob, sym):
     rel_sym=[]
     sym_count=[]
     for i in range(0,271):
-        if (df_prob.loc[sym_id][i]>(df_prob.loc[sym_id].max()/4) and cnt<5):
+        if (df_prob.loc[sym_id][i]>(df_prob.loc[sym_id].max()/4) and cnt<15):
             if(cnt==0):
                 #print('Entered symptom:', sym.loc[sym_id]['symptom'])
-                #print('\n')
+                print('\n')
                 print('Related Symptoms:')
             
             rel_sym.append(sym.loc[i]['syd'])
@@ -76,11 +85,44 @@ def order_sym(rel_sym,sym_count):
 
 #Print the symptoms according to the count
 def order_print(ord_sym,sym,sym_list):
-    print('\n')
+    #print('\n')
+    sym_name=[]
     for syd in ord_sym:
         ind=np.where(sym_list==syd)
-        print(sym['symptom'].loc[ind[0][0]])
+        sym_name.append(sym['symptom'].loc[ind[0][0]])
+    sym_name=[x for x in sym_name if str(x) != 'nan']
+    print(', '.join(sym_name))
     print('\n')
+
+def did_you_mean(sym_id,sym):
+    if(len(sym_id))>1:
+        print("Did you mean:")
+        for id in sym_id:
+            print(id, sym['symptom'][id])
+            print('\n')
+        sym_id= input("Enter the id:")
+    return sym_id
+
+def disp_rel_symptoms(sym_id,df_prob,sym,sym_list):
+        rel_sym,sym_count= related(int(sym_id), df_prob,sym)
+        ord_sym= order_sym(rel_sym,sym_count)
+        order_print(ord_sym,sym,sym_list)
+
+def run_process(sym,df_prob,sym_list):
+    sym_id=enter_symptom(sym)
+    #If any symptom is returned
+    if(sym_id.size):
+        #If multiple symptoms are returned
+        if(len(sym_id))>1:
+            sym_id=did_you_mean(sym_id,sym)
+        
+        disp_rel_symptoms(sym_id,df_prob,sym,sym_list)
+    
+    #If not symptom is returned
+    else:
+        print('Symptom not found')
+
+
 
 
 def main():
@@ -108,31 +150,7 @@ def main():
     disp_common(syd_count, sym)
 
     #Enter the symptom
-    var = input("Enter a symptom:")
-    if len(var):
-        sym_id=query(sym,var)
-    else:
-        print("No symptom entered")
-
-    #If any symptom is returned
-    if(sym_id.size):
-        #If multiple symptoms are returned
-        if(len(sym_id))>1:
-            print("Did you mean:")
-            for id in sym_id:
-                print(id, sym['symptom'][id])
-                print('\n')
-            sym_id= input("Enter the id:")
-
-        rel_sym,sym_count= related(int(sym_id), df_prob,sym)
-        ord_sym= order_sym(rel_sym,sym_count)
-        order_print(ord_sym,sym,sym_list)
-
-
-    #If not symptom is returned
-    else:
-        print('Symptom not found')
-
+    run_process(sym,df_prob,sym_list)
 
 
 if __name__ == "__main__":
